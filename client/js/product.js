@@ -1,4 +1,4 @@
-// Fetch and render products on homepage
+// Fetch and render all products on the products page
 
 document.addEventListener('DOMContentLoaded', async () => {
   const productsGrid = document.querySelector('.products-grid');
@@ -12,7 +12,7 @@ document.addEventListener('DOMContentLoaded', async () => {
       const card = document.createElement('div');
       card.className = 'product-card';
       card.innerHTML = `
-        <a href="product.html?id=${product.id}">
+        <a href="product-details.html?id=${product.id}">
           <img src="${product.image_url}" alt="${product.name}" />
           <h3>${product.name}</h3>
         </a>

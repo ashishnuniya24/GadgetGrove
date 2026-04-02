@@ -1,3 +1,32 @@
+import { comparePassword } from '../utils/hashPassword.js';
+
+export const login = async (req, res) => {
+	try {
+		const { email, password } = req.body;
+		if (!email || !password) {
+			return res.status(400).json({ message: 'Email and password are required.' });
+		}
+		const user = await findUserByEmail(email);
+		if (!user) {
+			return res.status(401).json({ message: 'Invalid email or password.' });
+		}
+		const isMatch = await comparePassword(password, user.password);
+		if (!isMatch) {
+			return res.status(401).json({ message: 'Invalid email or password.' });
+		}
+		// You can add JWT or session logic here if needed
+		res.json({
+			message: 'Login successful.',
+			user: {
+				id: user.id,
+				name: user.name,
+				email: user.email,
+			},
+		});
+	} catch (err) {
+		res.status(500).json({ message: 'Login failed.', error: err.message });
+	}
+};
 import { createUser, findUserByEmail } from '../models/userModel.js';
 import { hashPassword } from '../utils/hashPassword.js';
 

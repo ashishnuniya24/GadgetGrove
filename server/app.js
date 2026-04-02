@@ -1,9 +1,11 @@
 import express from 'express';
 import cors from 'cors';
+
 import morgan from 'morgan';
 import cookieParser from 'cookie-parser';
 import dotenv from 'dotenv';
 import authRoutes from './routes/authRoutes.js';
+import productRoutes from './routes/productRoutes.js';
 
 // Load environment variables
 dotenv.config();
@@ -29,5 +31,8 @@ app.get('/', (req, res) => {
 
 // Auth routes
 app.use('/api/auth', authRoutes);
+
+// Product routes
+app.use('/api/products', productRoutes);
 
 export default app;

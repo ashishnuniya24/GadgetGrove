@@ -22,6 +22,15 @@ CREATE TABLE IF NOT EXISTS products (
     created_at TIMESTAMP DEFAULT NOW()
 );
 
+-- Sample product data
+INSERT INTO products (name, description, price, image_url)
+VALUES
+('Smartphone X', 'Latest smartphone with amazing features.', 699.99, 'https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?auto=format&fit=crop&w=400&q=80'),
+('Wireless Headphones', 'Experience music like never before.', 199.99, 'https://images.unsplash.com/photo-1511367461989-f85a21fda167?auto=format&fit=crop&w=400&q=80'),
+('Smartwatch Pro', 'Track your fitness and stay connected.', 299.99, 'https://images.unsplash.com/photo-1516574187841-cb9cc2ca948b?auto=format&fit=crop&w=400&q=80'),
+('Bluetooth Speaker', 'Portable speaker with deep bass.', 89.99, 'https://images.unsplash.com/photo-1465101046530-73398c7f28ca?auto=format&fit=crop&w=400&q=80'),
+('Gaming Laptop', 'High performance laptop for gaming.', 1299.99, 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?auto=format&fit=crop&w=400&q=80');
+
 -- 3️⃣ Cart Items Table
 CREATE TABLE IF NOT EXISTS cart_items (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
