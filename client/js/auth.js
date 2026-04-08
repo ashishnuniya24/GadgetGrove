@@ -1,4 +1,15 @@
 (function() {
+	const api = window.GadgetGroveAPI;
+	const showAlert = (message, type = 'danger') => {
+		const alertHost = document.getElementById('auth-alert');
+		if (alertHost) {
+			alertHost.innerHTML = `<div class="alert alert-${type} mb-0" role="alert">${message}</div>`;
+			return;
+		}
+
+		alert(message);
+	};
+
 	// Signup form handler
 	const signupForm = document.getElementById('signup-form');
 	if (signupForm) {
@@ -12,27 +23,18 @@
 			const address = document.getElementById('address').value.trim();
 
 			if (password !== confirmPassword) {
-				alert('Passwords do not match.');
+				showAlert('Passwords do not match.', 'warning');
 				return;
 			}
 
 			try {
-				const res = await fetch('http://localhost:5000/api/auth/register', {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify({ name, email, password, phone, address })
-				});
-				const data = await res.json();
-				if (res.ok) {
-					alert('Registration successful! Please login.');
+				await api.register({ name, email, password, phone, address });
+				showAlert('Registration successful! Please login.', 'success');
+				window.setTimeout(() => {
 					window.location.href = 'login.html';
-				} else {
-					alert(data.message || 'Registration failed.');
-				}
+				}, 900);
 			} catch (err) {
-				alert('Network error. Please try again.');
+				showAlert(err.message || 'Network error. Please try again.');
 			}
 		});
 	}
@@ -46,23 +48,16 @@
 			const password = document.getElementById('password').value;
 
 			try {
-				const res = await fetch('http://localhost:5000/api/auth/login', {
-					method: 'POST',
-					headers: {
-						'Content-Type': 'application/json',
-					},
-					body: JSON.stringify({ email, password })
-				});
-				const data = await res.json();
-				if (res.ok) {
-					// Login successful, redirect to homepage
+				await api.login({ email, password });
+				showAlert('Login successful.', 'success');
+				window.setTimeout(() => {
 					window.location.href = 'index.html';
-				} else {
-					alert(data.message || 'Login failed.');
-				}
+				}, 600);
 			} catch (err) {
-				alert('Network error. Please try again.');
+				showAlert(err.message || 'Network error. Please try again.');
 			}
 		});
 	}
+
+	api?.bootstrapSession();
 })();

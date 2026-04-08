@@ -1,4 +1,6 @@
-import { comparePassword } from '../utils/hashPassword.js';
+import { createUser, findUserByEmail } from '../models/userModel.js';
+import { comparePassword, hashPassword } from '../utils/hashPassword.js';
+import { generateToken } from '../utils/generateToken.js';
 
 export const login = async (req, res) => {
 	try {
@@ -14,9 +16,10 @@ export const login = async (req, res) => {
 		if (!isMatch) {
 			return res.status(401).json({ message: 'Invalid email or password.' });
 		}
-		// You can add JWT or session logic here if needed
+		const token = generateToken({ id: user.id, email: user.email });
 		res.json({
 			message: 'Login successful.',
+			token,
 			user: {
 				id: user.id,
 				name: user.name,
@@ -27,8 +30,6 @@ export const login = async (req, res) => {
 		res.status(500).json({ message: 'Login failed.', error: err.message });
 	}
 };
-import { createUser, findUserByEmail } from '../models/userModel.js';
-import { hashPassword } from '../utils/hashPassword.js';
 
 export const register = async (req, res) => {
 	try {
@@ -53,5 +54,26 @@ export const register = async (req, res) => {
 		});
 	} catch (err) {
 		res.status(500).json({ message: 'Registration failed.', error: err.message });
+	}
+};
+
+export const getCurrentUser = async (req, res) => {
+	try {
+		const user = await findUserByEmail(req.user.email);
+		if (!user) {
+			return res.status(404).json({ message: 'User not found.' });
+		}
+
+		res.json({
+			user: {
+				id: user.id,
+				name: user.name,
+				email: user.email,
+				phone: user.phone,
+				address: user.address,
+			},
+		});
+	} catch (err) {
+		res.status(500).json({ message: 'Failed to fetch user.', error: err.message });
 	}
 };

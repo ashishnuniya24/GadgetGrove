@@ -4,54 +4,101 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Sign Up - GadgetGrove</title>
-    <link rel="stylesheet" href="../css/index.css" />
+    <link
+        href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+        rel="stylesheet"
+    />
+    <link rel="stylesheet" href="../css/global.css" />
     <link rel="stylesheet" href="../css/signup.css" />
 </head>
-<body>
+<body class="site-shell">
     <header>
-        <nav class="navbar">
-            <div class="logo">GadgetGrove</div>
-            <ul class="nav-links">
-                <li><a href="index.html">Home</a></li>
-                <li><a href="product.html">Products</a></li>
-                <li><a href="cart.html">Cart</a></li>
-                <li><a href="wishlist.html">Wishlist</a></li>
-                <li><a href="login.html">Login</a></li>
-                <li><a href="signup.html" class="active">Sign Up</a></li>
-            </ul>
+        <nav class="navbar navbar-expand-lg navbar-dark site-navbar sticky-top">
+            <div class="container py-2">
+                <a class="navbar-brand brand-mark" href="index.html">GadgetGrove</a>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#siteNavbar" aria-controls="siteNavbar" aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="siteNavbar">
+                    <ul class="navbar-nav ms-auto gap-lg-2 mb-3 mb-lg-0">
+                        <li class="nav-item"><a class="nav-link" href="index.html">Home</a></li>
+                        <li class="nav-item"><a class="nav-link" href="product.html">Products</a></li>
+                        <li class="nav-item"><a class="nav-link" href="cart.html">Cart</a></li>
+                        <li class="nav-item"><a class="nav-link" href="wishlist.html">Wishlist</a></li>
+                        <li class="nav-item"><a class="nav-link" href="login.html">Login</a></li>
+                        <li class="nav-item"><a class="nav-link active" href="signup.html">Sign Up</a></li>
+                    </ul>
+                </div>
+            </div>
         </nav>
     </header>
-    <main>
-        <div class="signup-container">
-            <h2>Create Your Account</h2>
-            <form id="signup-form">
-                <label for="name">Full Name</label>
-                <input type="text" id="name" name="name" required />
-
-                <label for="email">Email</label>
-                <input type="email" id="email" name="email" required />
-
-                <label for="password">Password</label>
-                <input type="password" id="password" name="password" required />
-
-                <label for="confirm-password">Confirm Password</label>
-                <input type="password" id="confirm-password" name="confirm-password" required />
-
-                <label for="phone">Phone Number</label>
-                <input type="tel" id="phone" name="phone" required />
-
-                <label for="address">Address</label>
-                <textarea id="address" name="address" rows="2" required></textarea>
-
-                <button type="submit" class="signup-btn">Sign Up</button>
-            </form>
-            <p>Already have an account? <a href="login.html">Login</a></p>
+    <main class="flex-grow-1 py-5">
+        <div class="container">
+            <div class="row justify-content-center">
+                <div class="col-12 col-lg-8">
+                    <div class="card auth-card border-0 shadow-lg">
+                        <div class="card-body p-4 p-lg-5">
+                            <div class="d-flex flex-column flex-lg-row justify-content-between gap-3 mb-4">
+                                <div>
+                                    <span class="eyebrow">Join GadgetGrove</span>
+                                    <h1 class="h3 mb-1">Create Your Account</h1>
+                                    <p class="text-secondary mb-0">Create your account to save favorites, manage your cart, and place orders faster.</p>
+                                </div>
+                                <div class="alert alert-light border mb-0 align-self-start">Quick registration with all key details in one place.</div>
+                            </div>
+                            <div id="auth-alert" class="mb-3"></div>
+                            <form id="signup-form" class="row g-3">
+                                <div class="col-12 col-md-6">
+                                    <label for="name" class="form-label">Full Name</label>
+                                    <input type="text" class="form-control" id="name" name="name" required />
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label for="email" class="form-label">Email</label>
+                                    <input type="email" class="form-control" id="email" name="email" required />
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label for="password" class="form-label">Password</label>
+                                    <input type="password" class="form-control" id="password" name="password" required />
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label for="confirm-password" class="form-label">Confirm Password</label>
+                                    <input type="password" class="form-control" id="confirm-password" name="confirm-password" required />
+                                </div>
+                                <div class="col-12 col-md-6">
+                                    <label for="phone" class="form-label">Phone Number</label>
+                                    <input type="tel" class="form-control" id="phone" name="phone" required />
+                                </div>
+                                <div class="col-12">
+                                    <label for="address" class="form-label">Address</label>
+                                    <textarea class="form-control" id="address" name="address" rows="3" required></textarea>
+                                </div>
+                                <div class="col-12 d-grid d-md-flex justify-content-md-end">
+                                    <button type="submit" class="btn btn-primary btn-lg px-4">Sign Up</button>
+                                </div>
+                            </form>
+                            <p class="text-center text-secondary mt-4 mb-0">Already have an account? <a href="login.html">Login</a></p>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
-    <footer>
-        <p>&copy; 2026 GadgetGrove. All rights reserved.</p>
-        <p>Contact: support@gadgetgrove.com | Follow us: @GadgetGrove</p>
+    <footer class="site-footer mt-auto">
+        <div class="container py-4 text-center text-md-start">
+            <div class="row g-3 align-items-center">
+                <div class="col-12 col-md-6">
+                    <p class="mb-1">&copy; 2026 GadgetGrove. All rights reserved.</p>
+                    <p class="mb-0 text-footer-muted">Create your account to unlock a smoother shopping experience.</p>
+                </div>
+                <div class="col-12 col-md-6 text-md-end">
+                    <p class="mb-1">Contact: support@gadgetgrove.com</p>
+                    <p class="mb-0 text-footer-muted">Follow us: @GadgetGrove</p>
+                </div>
+            </div>
+        </div>
     </footer>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="../js/api.js"></script>
     <script src="../js/auth.js"></script>
 </body>
 </html>

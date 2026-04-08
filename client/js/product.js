@@ -2,26 +2,20 @@
 
 document.addEventListener('DOMContentLoaded', async () => {
   const productsGrid = document.querySelector('.products-grid');
+  const alertHost = document.getElementById('catalogAlert');
   if (!productsGrid) return;
+
+  const catalog = await window.GadgetGroveProductCards?.createCatalogController({
+    grid: productsGrid,
+    alertHost,
+    emptyMessage: 'No products are available right now.',
+  });
 
   try {
     const res = await fetch('http://localhost:5000/api/products');
     const products = await res.json();
-    productsGrid.innerHTML = '';
-    products.forEach(product => {
-      const card = document.createElement('div');
-      card.className = 'product-card';
-      card.innerHTML = `
-        <a href="product-details.html?id=${product.id}">
-          <img src="${product.image_url}" alt="${product.name}" />
-          <h3>${product.name}</h3>
-        </a>
-        <p>${product.description}</p>
-        <p class="price">₹${Number(product.price).toLocaleString('en-IN')}</p>
-      `;
-      productsGrid.appendChild(card);
-    });
+    catalog?.render(products);
   } catch (err) {
-    productsGrid.innerHTML = '<p>Failed to load products.</p>';
+    productsGrid.innerHTML = '<div class="col-12"><div class="alert alert-danger mb-0">Failed to load products.</div></div>';
   }
 });

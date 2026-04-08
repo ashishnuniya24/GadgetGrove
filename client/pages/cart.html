@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8" />
+	<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+	<title>Cart - GadgetGrove</title>
+	<link
+		href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+		rel="stylesheet"
+	/>
+	<link rel="stylesheet" href="../css/global.css" />
+	<link rel="stylesheet" href="../css/cart.css" />
+</head>
+<body class="site-shell">
+	<header>
+		<nav class="navbar navbar-expand-lg navbar-dark site-navbar sticky-top">
+			<div class="container py-2">
+				<a class="navbar-brand brand-mark" href="index.html">GadgetGrove</a>
+				<button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#siteNavbar" aria-controls="siteNavbar" aria-expanded="false" aria-label="Toggle navigation">
+					<span class="navbar-toggler-icon"></span>
+				</button>
+				<div class="collapse navbar-collapse" id="siteNavbar">
+					<ul class="navbar-nav ms-auto gap-lg-2 mb-3 mb-lg-0">
+						<li class="nav-item"><a class="nav-link" href="index.html">Home</a></li>
+						<li class="nav-item"><a class="nav-link" href="product.html">Products</a></li>
+						<li class="nav-item"><a class="nav-link active" href="cart.html">Cart</a></li>
+						<li class="nav-item"><a class="nav-link" href="wishlist.html">Wishlist</a></li>
+						<li class="nav-item"><a class="nav-link" href="login.html">Login</a></li>
+						<li class="nav-item"><a class="nav-link" href="signup.html">Sign Up</a></li>
+					</ul>
+				</div>
+			</div>
+		</nav>
+	</header>
+	<main class="flex-grow-1 py-5">
+		<div class="container">
+			<div class="d-flex flex-column flex-lg-row justify-content-between align-items-lg-end gap-3 mb-4">
+				<div>
+					<span class="eyebrow">Your Shopping Cart</span>
+					<h1 class="section-title mb-1">Your Cart</h1>
+					<p class="section-copy mb-0">Review selected products, adjust quantities, and continue to checkout.</p>
+				</div>
+				<span id="cartItemCount" class="badge rounded-pill text-bg-warning px-3 py-2">0 Items</span>
+			</div>
+			<div id="cartAlert" class="mb-4"></div>
+			<div class="row g-4">
+				<div class="col-12 col-xl-8">
+					<div class="card border-0 shadow-sm h-100">
+						<div class="card-body p-0">
+							<div class="table-responsive">
+								<table class="table align-middle mb-0">
+									<thead class="table-light">
+										<tr>
+											<th>Product</th>
+											<th>Price</th>
+											<th>Quantity</th>
+											<th>Total</th>
+											<th class="text-end">Actions</th>
+										</tr>
+									</thead>
+									<tbody id="cartItemsBody"></tbody>
+								</table>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-12 col-xl-4">
+					<div class="card border-0 shadow-sm summary-card h-100">
+						<div class="card-body p-4">
+							<h2 class="h4 mb-3">Order Summary</h2>
+							<div class="d-flex justify-content-between mb-2"><span>Subtotal</span><span id="cartSubtotal">€0.00</span></div>
+							<div class="d-flex justify-content-between mb-2"><span>Delivery</span><span id="cartDelivery">€0.00</span></div>
+							<div class="d-flex justify-content-between mb-4 fw-semibold"><span>Total</span><span id="cartTotal">€0.00</span></div>
+							<div class="d-grid gap-2">
+								<a id="checkoutBtn" class="btn btn-primary btn-lg" href="checkout.html">Proceed to Checkout</a>
+								<button id="clearCartBtn" class="btn btn-outline-danger" type="button">Clear Cart</button>
+								<a class="btn btn-outline-secondary" href="product.html">Continue Shopping</a>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</main>
+	<footer class="site-footer mt-auto">
+		<div class="container py-4 text-center text-md-start">
+			<div class="row g-3 align-items-center">
+				<div class="col-12 col-md-6">
+					<p class="mb-1">&copy; 2026 GadgetGrove. All rights reserved.</p>
+					<p class="mb-0 text-footer-muted">Review your selected items before placing an order.</p>
+				</div>
+				<div class="col-12 col-md-6 text-md-end">
+					<p class="mb-1">Contact: support@gadgetgrove.com</p>
+					<p class="mb-0 text-footer-muted">Follow us: @GadgetGrove</p>
+				</div>
+			</div>
+		</div>
+	</footer>
+	<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+	<script src="../js/api.js"></script>
+	<script src="../js/cart.js"></script>
+</body>
+</html>

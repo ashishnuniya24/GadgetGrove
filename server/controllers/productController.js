@@ -1,3 +1,5 @@
+import Product from '../models/productModel.js';
+
 export const getProductById = async (req, res) => {
 	try {
 		const { id } = req.params;
@@ -10,7 +12,6 @@ export const getProductById = async (req, res) => {
 		res.status(500).json({ error: 'Failed to fetch product details' });
 	}
 };
-import Product from '../models/productModel.js';
 
 export const getAllProducts = async (req, res) => {
 	try {
