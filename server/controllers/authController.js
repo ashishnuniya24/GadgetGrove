@@ -2,6 +2,18 @@ import { createUser, findUserByEmail } from '../models/userModel.js';
 import { comparePassword, hashPassword } from '../utils/hashPassword.js';
 import { generateToken } from '../utils/generateToken.js';
 
+const buildUserResponse = (user) => ({
+	id: user.id,
+	name: user.name,
+	email: user.email,
+	phone: user.phone,
+	address: user.address,
+});
+
+const sendServerError = (res, message, err) => {
+	res.status(500).json({ message, error: err.message });
+};
+
 export const login = async (req, res) => {
 	try {
 		const { email, password } = req.body;
@@ -20,14 +32,10 @@ export const login = async (req, res) => {
 		res.json({
 			message: 'Login successful.',
 			token,
-			user: {
-				id: user.id,
-				name: user.name,
-				email: user.email,
-			},
+			user: buildUserResponse(user),
 		});
 	} catch (err) {
-		res.status(500).json({ message: 'Login failed.', error: err.message });
+		sendServerError(res, 'Login failed.', err);
 	}
 };
 
@@ -46,14 +54,12 @@ export const register = async (req, res) => {
 		res.status(201).json({
 			message: 'User registered successfully.',
 			user: {
-				id: user.id,
-				name: user.name,
-				email: user.email,
+				...buildUserResponse(user),
 				created_at: user.created_at,
 			},
 		});
 	} catch (err) {
-		res.status(500).json({ message: 'Registration failed.', error: err.message });
+		sendServerError(res, 'Registration failed.', err);
 	}
 };
 
@@ -64,16 +70,8 @@ export const getCurrentUser = async (req, res) => {
 			return res.status(404).json({ message: 'User not found.' });
 		}
 
-		res.json({
-			user: {
-				id: user.id,
-				name: user.name,
-				email: user.email,
-				phone: user.phone,
-				address: user.address,
-			},
-		});
+		res.json({ user: buildUserResponse(user) });
 	} catch (err) {
-		res.status(500).json({ message: 'Failed to fetch user.', error: err.message });
+		sendServerError(res, 'Failed to fetch user.', err);
 	}
 };

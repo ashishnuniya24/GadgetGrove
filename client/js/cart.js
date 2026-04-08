@@ -1,9 +1,12 @@
 (function () {
 	const api = window.GadgetGroveAPI;
 	const DELIVERY_FEE = 199;
-	const formatCurrency = (amount) => api.formatCurrency(amount);
 
-	document.addEventListener('DOMContentLoaded', async () => {
+	function formatCurrency(amount) {
+		return api.formatCurrency(amount);
+	}
+
+	document.addEventListener('DOMContentLoaded', async function () {
 		const body = document.getElementById('cartItemsBody');
 		if (!body) {
 			return;
@@ -17,11 +20,15 @@
 		const clearButton = document.getElementById('clearCartBtn');
 		const checkoutButton = document.getElementById('checkoutBtn');
 
-		const showAlert = (message, type = 'danger') => {
+		function showAlert(message, type = 'danger') {
 			alertHost.innerHTML = `<div class="alert alert-${type} mb-0">${message}</div>`;
-		};
+		}
 
-		const renderCart = (cart) => {
+		function showEmptyRow(message) {
+			body.innerHTML = `<tr><td colspan="5"><div class="empty-state my-3">${message}</div></td></tr>`;
+		}
+
+		function renderCart(cart) {
 			const { items, summary } = cart;
 			const delivery = items.length ? DELIVERY_FEE : 0;
 			countBadge.textContent = `${summary.itemCount} Items`;
@@ -32,7 +39,7 @@
 			clearButton.disabled = !items.length;
 
 			if (!items.length) {
-				body.innerHTML = '<tr><td colspan="5"><div class="empty-state my-3">Your cart is empty. Add products from the catalog to continue.</div></td></tr>';
+				showEmptyRow('Your cart is empty. Add products from the catalog to continue.');
 				return;
 			}
 
@@ -59,21 +66,41 @@
 					<td class="text-end"><button class="btn btn-outline-danger btn-sm" data-action="remove" data-id="${item.id}" type="button">Remove</button></td>
 				</tr>
 			`).join('');
-		};
+		}
 
-		const loadCart = async () => {
+		async function loadCart() {
 			try {
 				const cart = await api.getCart();
 				renderCart(cart);
 			} catch (error) {
 				showAlert(error.message || 'Failed to load cart.');
-				body.innerHTML = '<tr><td colspan="5"><div class="empty-state my-3">Unable to load your cart right now.</div></td></tr>';
+				showEmptyRow('Unable to load your cart right now.');
 			}
-		};
+		}
+
+		async function handleCartAction(action, id, quantity) {
+			if (action === 'increase') {
+				await api.updateCartItem(id, quantity + 1);
+				return;
+			}
+
+			if (action === 'decrease') {
+				if (quantity === 1) {
+					await api.removeCartItem(id);
+				} else {
+					await api.updateCartItem(id, quantity - 1);
+				}
+				return;
+			}
+
+			if (action === 'remove') {
+				await api.removeCartItem(id);
+			}
+		}
 
 		if (!api.isAuthenticated()) {
 			showAlert('Please login to access your cart.', 'warning');
-			body.innerHTML = '<tr><td colspan="5"><div class="empty-state my-3">Login is required to view your cart.</div></td></tr>';
+			showEmptyRow('Login is required to view your cart.');
 			checkoutButton.classList.add('disabled');
 			clearButton.disabled = true;
 			return;
@@ -82,39 +109,23 @@
 		await api.bootstrapSession();
 		await loadCart();
 
-		body.addEventListener('click', async (event) => {
+		body.addEventListener('click', async function (event) {
 			const control = event.target.closest('[data-action]');
 			if (!control) {
 				return;
 			}
 
 			const { action, id, quantity } = control.dataset;
-			const currentQuantity = Number(quantity);
 
 			try {
-				if (action === 'increase') {
-					await api.updateCartItem(id, currentQuantity + 1);
-				}
-
-				if (action === 'decrease') {
-					if (currentQuantity === 1) {
-						await api.removeCartItem(id);
-					} else {
-						await api.updateCartItem(id, currentQuantity - 1);
-					}
-				}
-
-				if (action === 'remove') {
-					await api.removeCartItem(id);
-				}
-
+				await handleCartAction(action, id, Number(quantity));
 				await loadCart();
 			} catch (error) {
 				showAlert(error.message || 'Unable to update cart.');
 			}
 		});
 
-		clearButton.addEventListener('click', async () => {
+		clearButton.addEventListener('click', async function () {
 			try {
 				await api.clearCart();
 				showAlert('Cart cleared.', 'success');

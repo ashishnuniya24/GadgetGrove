@@ -1,43 +1,51 @@
-// Fetch and render products on homepage
-
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', async function () {
+  const api = window.GadgetGroveAPI;
+  const productCards = window.GadgetGroveProductCards;
   const productsGrid = document.querySelector('.products-grid');
   const alertHost = document.getElementById('catalogAlert');
-  if (!productsGrid) return;
+  const searchInput = document.getElementById('searchInput');
+  const searchBtn = document.getElementById('searchBtn');
+  let products = [];
 
-  const catalog = await window.GadgetGroveProductCards?.createCatalogController({
+  if (!productsGrid) {
+    return;
+  }
+
+  const catalog = await productCards?.createCatalogController({
     grid: productsGrid,
     alertHost,
     emptyMessage: 'No products matched your search.',
   });
 
-  let products = [];
-
-  try {
-    const res = await fetch('http://localhost:5000/api/products');
-    products = await res.json();
-    catalog?.render(products);
-  } catch (err) {
+  function renderLoadError() {
     productsGrid.innerHTML = '<div class="col-12"><div class="alert alert-danger mb-0">Failed to load products.</div></div>';
   }
 
-  // Search functionality
-  const searchInput = document.getElementById('searchInput');
-  const searchBtn = document.getElementById('searchBtn');
-  if (searchInput && searchBtn) {
-    searchBtn.addEventListener('click', () => {
-      const query = searchInput.value.toLowerCase();
-      const filtered = products.filter(product =>
+  function searchProducts() {
+    const query = searchInput.value.trim().toLowerCase();
+    const filteredProducts = products.filter(function (product) {
+      return (
         product.name.toLowerCase().includes(query) ||
         product.description.toLowerCase().includes(query)
       );
-      catalog?.render(filtered);
     });
-    searchInput.addEventListener('keyup', (e) => {
-      if (e.key === 'Enter') {
-        searchBtn.click();
+
+    catalog?.render(filteredProducts);
+  }
+
+  try {
+    products = await api.request('/products');
+    catalog?.render(products);
+  } catch {
+    renderLoadError();
+  }
+
+  if (searchInput && searchBtn) {
+    searchBtn.addEventListener('click', searchProducts);
+    searchInput.addEventListener('keyup', function (event) {
+      if (event.key === 'Enter') {
+        searchProducts();
       }
     });
   }
-
 });

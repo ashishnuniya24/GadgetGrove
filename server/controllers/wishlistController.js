@@ -6,12 +6,20 @@ import {
 	existsWishlistItem,
 } from '../models/wishlistModel.js';
 
+const sendServerError = (res, message, error) => {
+	res.status(500).json({ message, error: error.message });
+};
+
+const getWishlistResponse = async (userId) => {
+	const items = await getWishlistByUserId(userId);
+	return { items, count: items.length };
+};
+
 export const getWishlist = async (req, res) => {
 	try {
-		const items = await getWishlistByUserId(req.user.id);
-		res.json({ items, count: items.length });
+		res.json(await getWishlistResponse(req.user.id));
 	} catch (error) {
-		res.status(500).json({ message: 'Failed to fetch wishlist.', error: error.message });
+		sendServerError(res, 'Failed to fetch wishlist.', error);
 	}
 };
 
@@ -29,15 +37,13 @@ export const addToWishlist = async (req, res) => {
 
 		const existing = await existsWishlistItem({ userId: req.user.id, productId });
 		if (existing) {
-			const items = await getWishlistByUserId(req.user.id);
-			return res.json({ message: 'Product already in wishlist.', items, count: items.length });
+			return res.json({ message: 'Product already in wishlist.', ...(await getWishlistResponse(req.user.id)) });
 		}
 
 		await addWishlistItem({ userId: req.user.id, productId });
-		const items = await getWishlistByUserId(req.user.id);
-		res.status(201).json({ message: 'Product added to wishlist.', items, count: items.length });
+		res.status(201).json({ message: 'Product added to wishlist.', ...(await getWishlistResponse(req.user.id)) });
 	} catch (error) {
-		res.status(500).json({ message: 'Failed to add to wishlist.', error: error.message });
+		sendServerError(res, 'Failed to add to wishlist.', error);
 	}
 };
 
@@ -49,9 +55,8 @@ export const removeFromWishlist = async (req, res) => {
 			return res.status(404).json({ message: 'Wishlist item not found.' });
 		}
 
-		const items = await getWishlistByUserId(req.user.id);
-		res.json({ message: 'Product removed from wishlist.', items, count: items.length });
+		res.json({ message: 'Product removed from wishlist.', ...(await getWishlistResponse(req.user.id)) });
 	} catch (error) {
-		res.status(500).json({ message: 'Failed to remove wishlist item.', error: error.message });
+		sendServerError(res, 'Failed to remove wishlist item.', error);
 	}
 };

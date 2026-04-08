@@ -1,6 +1,5 @@
-document.addEventListener('DOMContentLoaded', async () => {
+document.addEventListener('DOMContentLoaded', async function () {
   const api = window.GadgetGroveAPI;
-  const formatCurrency = (amount) => api.formatCurrency(amount);
   const detailsDiv = document.getElementById('product-details');
   const commentList = document.getElementById('commentList');
   const commentForm = document.getElementById('commentForm');
@@ -10,59 +9,75 @@ document.addEventListener('DOMContentLoaded', async () => {
   const commentCancelBtn = document.getElementById('commentCancelBtn');
   const feedbackForm = document.getElementById('feedbackForm');
   const feedbackAlert = document.getElementById('feedbackAlert');
-  const urlParams = new URLSearchParams(window.location.search);
-  const productId = urlParams.get('id');
+  const productId = new URLSearchParams(window.location.search).get('id');
   let editingCommentId = null;
 
-  if (!productId) {
-    detailsDiv.innerHTML = '<div class="alert alert-warning">Product not found.</div>';
-    return;
+  function showAlert(host, message, type = 'danger') {
+    host.innerHTML = `<div class="alert alert-${type} mb-0">${message}</div>`;
   }
 
-  const showCommentAlert = (message, type = 'danger') => {
-    commentAlert.innerHTML = `<div class="alert alert-${type} mb-0">${message}</div>`;
-  };
+  function showCommentAlert(message, type = 'danger') {
+    showAlert(commentAlert, message, type);
+  }
 
-  const showFeedbackAlert = (message, type = 'danger') => {
-    feedbackAlert.innerHTML = `<div class="alert alert-${type} mb-0">${message}</div>`;
-  };
+  function showFeedbackAlert(message, type = 'danger') {
+    showAlert(feedbackAlert, message, type);
+  }
 
-  const resetCommentForm = () => {
+  function resetCommentForm() {
     editingCommentId = null;
     commentContent.value = '';
     commentSubmitBtn.textContent = 'Post Comment';
     commentCancelBtn.classList.add('d-none');
-  };
+  }
 
-  const renderComments = (comments) => {
+  function requireLogin(message, alertFn) {
+    if (api.isAuthenticated()) {
+      return true;
+    }
+
+    alertFn(message, 'warning');
+    return false;
+  }
+
+  function renderComments(comments) {
     if (!comments.length) {
       commentList.innerHTML = '<div class="empty-state">No comments yet. Be the first to share your thoughts.</div>';
       return;
     }
 
-    commentList.innerHTML = comments.map((comment) => `
-      <article class="comment-card card border-0 shadow-sm">
-        <div class="card-body p-4">
-          <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
-            <div>
-              <h3 class="h6 mb-1">${comment.user_name}</h3>
-              <p class="comment-meta mb-0">${new Date(comment.updated_at || comment.created_at).toLocaleString()}</p>
-            </div>
-            <div class="d-flex gap-2 align-items-center">
-              <button class="btn btn-sm ${comment.liked_by_user ? 'btn-primary' : 'btn-outline-primary'}" data-comment-action="like" data-comment-id="${comment.id}" type="button">
-                Like (${Number(comment.like_count)})
-              </button>
-              ${comment.is_owner ? `<button class="btn btn-sm btn-outline-secondary" data-comment-action="edit" data-comment-id="${comment.id}" type="button">Edit</button>` : ''}
-              ${comment.is_owner ? `<button class="btn btn-sm btn-outline-danger" data-comment-action="delete" data-comment-id="${comment.id}" type="button">Delete</button>` : ''}
-            </div>
-          </div>
-          <p class="mb-0 text-secondary">${comment.content}</p>
-        </div>
-      </article>
-    `).join('');
-  };
+    commentList.innerHTML = comments.map(function (comment) {
+      const dateText = new Date(comment.updated_at || comment.created_at).toLocaleString();
+      const likeButtonClass = comment.liked_by_user ? 'btn-primary' : 'btn-outline-primary';
+      const editButton = comment.is_owner
+        ? `<button class="btn btn-sm btn-outline-secondary" data-comment-action="edit" data-comment-id="${comment.id}" type="button">Edit</button>`
+        : '';
+      const deleteButton = comment.is_owner
+        ? `<button class="btn btn-sm btn-outline-danger" data-comment-action="delete" data-comment-id="${comment.id}" type="button">Delete</button>`
+        : '';
 
-  const loadComments = async () => {
+      return `
+        <article class="comment-card card border-0 shadow-sm">
+          <div class="card-body p-4">
+            <div class="d-flex justify-content-between align-items-start gap-3 mb-3">
+              <div>
+                <h3 class="h6 mb-1">${comment.user_name}</h3>
+                <p class="comment-meta mb-0">${dateText}</p>
+              </div>
+              <div class="d-flex gap-2 align-items-center">
+                <button class="btn btn-sm ${likeButtonClass}" data-comment-action="like" data-comment-id="${comment.id}" type="button">Like (${Number(comment.like_count)})</button>
+                ${editButton}
+                ${deleteButton}
+              </div>
+            </div>
+            <p class="mb-0 text-secondary">${comment.content}</p>
+          </div>
+        </article>
+      `;
+    }).join('');
+  }
+
+  async function loadComments() {
     try {
       const data = await api.getComments(productId);
       renderComments(data.comments || []);
@@ -70,7 +85,30 @@ document.addEventListener('DOMContentLoaded', async () => {
       showCommentAlert(error.message || 'Failed to load comments.');
       commentList.innerHTML = '<div class="empty-state">Unable to load comments right now.</div>';
     }
-  };
+  }
+
+  async function fillCommentForEdit(commentId) {
+    const data = await api.getComments(productId);
+    const targetComment = (data.comments || []).find(function (comment) {
+      return comment.id === commentId;
+    });
+
+    if (!targetComment) {
+      showCommentAlert('Comment not found.');
+      return;
+    }
+
+    editingCommentId = commentId;
+    commentContent.value = targetComment.content;
+    commentSubmitBtn.textContent = 'Update Comment';
+    commentCancelBtn.classList.remove('d-none');
+    commentContent.focus();
+  }
+
+  if (!productId) {
+    detailsDiv.innerHTML = '<div class="alert alert-warning">Product not found.</div>';
+    return;
+  }
 
   try {
     const product = await api.request(`/products/${productId}`);
@@ -84,7 +122,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div class="card-body p-4 p-xl-5 h-100 d-flex flex-column">
               <h2 class="mb-3">${product.name}</h2>
               <p class="text-secondary mb-4">${product.description}</p>
-              <p class="price mb-4">${formatCurrency(product.price)}</p>
+              <p class="price mb-4">${api.formatCurrency(product.price)}</p>
               <div id="product-action-alert" class="mb-3"></div>
               <div class="mt-auto d-flex flex-column flex-sm-row gap-3">
                 <button class="btn btn-primary btn-lg" type="button" data-action="cart">Add to Cart</button>
@@ -96,50 +134,46 @@ document.addEventListener('DOMContentLoaded', async () => {
       </article>
     `;
 
-    const alertHost = detailsDiv.querySelector('#product-action-alert');
-    const showAlert = (message, type = 'success') => {
-      alertHost.innerHTML = `<div class="alert alert-${type} mb-0">${message}</div>`;
-    };
+    const productAlertHost = detailsDiv.querySelector('#product-action-alert');
 
-    detailsDiv.addEventListener('click', async (event) => {
-      const action = event.target.closest('[data-action]')?.dataset.action;
-      if (!action) {
+    detailsDiv.addEventListener('click', async function (event) {
+      const button = event.target.closest('[data-action]');
+      if (!button) {
         return;
       }
 
-      if (!api?.isAuthenticated()) {
-        showAlert('Please login to continue.', 'warning');
-        window.setTimeout(() => {
+      if (!api.isAuthenticated()) {
+        showAlert(productAlertHost, 'Please login to continue.', 'warning');
+        window.setTimeout(function () {
           window.location.href = 'login.html';
         }, 900);
         return;
       }
 
       try {
-        if (action === 'cart') {
+        if (button.dataset.action === 'cart') {
           await api.addToCart(product.id, 1);
-          showAlert('Product added to cart.');
+          showAlert(productAlertHost, 'Product added to cart.', 'success');
         }
 
-        if (action === 'wishlist') {
+        if (button.dataset.action === 'wishlist') {
           await api.addToWishlist(product.id);
-          showAlert('Product saved to wishlist.');
+          showAlert(productAlertHost, 'Product saved to wishlist.', 'success');
         }
       } catch (error) {
-        showAlert(error.message || 'Action failed.', 'danger');
+        showAlert(productAlertHost, error.message || 'Action failed.', 'danger');
       }
     });
 
     await loadComments();
-  } catch (err) {
+  } catch {
     detailsDiv.innerHTML = '<div class="alert alert-danger">Failed to load product details.</div>';
   }
 
-  commentForm.addEventListener('submit', async (event) => {
+  commentForm.addEventListener('submit', async function (event) {
     event.preventDefault();
 
-    if (!api.isAuthenticated()) {
-      showCommentAlert('Please login to post or edit comments.', 'warning');
+    if (!requireLogin('Please login to post or edit comments.', showCommentAlert)) {
       return;
     }
 
@@ -150,39 +184,34 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     try {
-      if (editingCommentId) {
-        const data = await api.updateComment(productId, editingCommentId, content);
-        renderComments(data.comments || []);
-        showCommentAlert('Comment updated.', 'success');
-      } else {
-        const data = await api.addComment(productId, content);
-        renderComments(data.comments || []);
-        showCommentAlert('Comment posted.', 'success');
-      }
+      const data = editingCommentId
+        ? await api.updateComment(productId, editingCommentId, content)
+        : await api.addComment(productId, content);
 
+      renderComments(data.comments || []);
+      showCommentAlert(editingCommentId ? 'Comment updated.' : 'Comment posted.', 'success');
       resetCommentForm();
     } catch (error) {
       showCommentAlert(error.message || 'Failed to save comment.');
     }
   });
 
-  commentCancelBtn.addEventListener('click', () => {
+  commentCancelBtn.addEventListener('click', function () {
     resetCommentForm();
   });
 
-  commentList.addEventListener('click', async (event) => {
-    const control = event.target.closest('[data-comment-action]');
-    if (!control) {
+  commentList.addEventListener('click', async function (event) {
+    const button = event.target.closest('[data-comment-action]');
+    if (!button) {
       return;
     }
 
-    const action = control.dataset.commentAction;
-    const commentId = control.dataset.commentId;
-
-    if (!api.isAuthenticated()) {
-      showCommentAlert('Please login to interact with comments.', 'warning');
+    if (!requireLogin('Please login to interact with comments.', showCommentAlert)) {
       return;
     }
+
+    const action = button.dataset.commentAction;
+    const commentId = button.dataset.commentId;
 
     try {
       if (action === 'like') {
@@ -191,21 +220,16 @@ document.addEventListener('DOMContentLoaded', async () => {
         return;
       }
 
-      const data = await api.getComments(productId);
-      const targetComment = (data.comments || []).find((comment) => comment.id === commentId);
-
-      if (action === 'edit' && targetComment) {
-        editingCommentId = commentId;
-        commentContent.value = targetComment.content;
-        commentSubmitBtn.textContent = 'Update Comment';
-        commentCancelBtn.classList.remove('d-none');
-        commentContent.focus();
+      if (action === 'edit') {
+        await fillCommentForEdit(commentId);
+        return;
       }
 
       if (action === 'delete') {
-        const response = await api.deleteComment(productId, commentId);
-        renderComments(response.comments || []);
+        const data = await api.deleteComment(productId, commentId);
+        renderComments(data.comments || []);
         showCommentAlert('Comment deleted.', 'success');
+
         if (editingCommentId === commentId) {
           resetCommentForm();
         }
@@ -215,16 +239,16 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
   });
 
-  feedbackForm.addEventListener('submit', async (event) => {
+  feedbackForm.addEventListener('submit', async function (event) {
     event.preventDefault();
 
-    if (!api.isAuthenticated()) {
-      showFeedbackAlert('Please login to submit feedback.', 'warning');
+    if (!requireLogin('Please login to submit feedback.', showFeedbackAlert)) {
       return;
     }
 
     const category = document.getElementById('feedbackCategory').value;
     const message = document.getElementById('feedbackMessage').value.trim();
+
     if (!message) {
       showFeedbackAlert('Feedback message cannot be empty.', 'warning');
       return;

@@ -8,6 +8,19 @@ import {
 	clearCartItems,
 } from '../models/cartModel.js';
 
+const sendServerError = (res, message, error) => {
+	res.status(500).json({ message, error: error.message });
+};
+
+const getCartResponse = async (userId) => {
+	const items = await getCartItemsByUserId(userId);
+	return shapeCartResponse(items);
+};
+
+const isValidQuantity = (quantity) => {
+	return Number.isInteger(Number(quantity)) && Number(quantity) >= 1;
+};
+
 const shapeCartResponse = (items) => {
 	const subtotal = items.reduce((sum, item) => sum + Number(item.line_total), 0);
 	return {
@@ -21,10 +34,9 @@ const shapeCartResponse = (items) => {
 
 export const getCart = async (req, res) => {
 	try {
-		const items = await getCartItemsByUserId(req.user.id);
-		res.json(shapeCartResponse(items));
+		res.json(await getCartResponse(req.user.id));
 	} catch (error) {
-		res.status(500).json({ message: 'Failed to fetch cart.', error: error.message });
+		sendServerError(res, 'Failed to fetch cart.', error);
 	}
 };
 
@@ -35,7 +47,7 @@ export const addToCart = async (req, res) => {
 			return res.status(400).json({ message: 'Product ID is required.' });
 		}
 
-		if (!Number.isInteger(Number(quantity)) || Number(quantity) < 1) {
+		if (!isValidQuantity(quantity)) {
 			return res.status(400).json({ message: 'Quantity must be at least 1.' });
 		}
 
@@ -45,10 +57,9 @@ export const addToCart = async (req, res) => {
 		}
 
 		await addCartItem({ userId: req.user.id, productId, quantity: Number(quantity) });
-		const items = await getCartItemsByUserId(req.user.id);
-		res.status(201).json({ message: 'Product added to cart.', ...shapeCartResponse(items) });
+		res.status(201).json({ message: 'Product added to cart.', ...(await getCartResponse(req.user.id)) });
 	} catch (error) {
-		res.status(500).json({ message: 'Failed to add product to cart.', error: error.message });
+		sendServerError(res, 'Failed to add product to cart.', error);
 	}
 };
 
@@ -57,7 +68,7 @@ export const updateCartItem = async (req, res) => {
 		const { id } = req.params;
 		const { quantity } = req.body;
 
-		if (!Number.isInteger(Number(quantity)) || Number(quantity) < 1) {
+		if (!isValidQuantity(quantity)) {
 			return res.status(400).json({ message: 'Quantity must be at least 1.' });
 		}
 
@@ -67,10 +78,9 @@ export const updateCartItem = async (req, res) => {
 		}
 
 		await updateCartItemQuantity({ itemId: id, userId: req.user.id, quantity: Number(quantity) });
-		const items = await getCartItemsByUserId(req.user.id);
-		res.json({ message: 'Cart updated.', ...shapeCartResponse(items) });
+		res.json({ message: 'Cart updated.', ...(await getCartResponse(req.user.id)) });
 	} catch (error) {
-		res.status(500).json({ message: 'Failed to update cart item.', error: error.message });
+		sendServerError(res, 'Failed to update cart item.', error);
 	}
 };
 
@@ -82,10 +92,9 @@ export const removeCartItem = async (req, res) => {
 			return res.status(404).json({ message: 'Cart item not found.' });
 		}
 
-		const items = await getCartItemsByUserId(req.user.id);
-		res.json({ message: 'Item removed from cart.', ...shapeCartResponse(items) });
+		res.json({ message: 'Item removed from cart.', ...(await getCartResponse(req.user.id)) });
 	} catch (error) {
-		res.status(500).json({ message: 'Failed to remove cart item.', error: error.message });
+		sendServerError(res, 'Failed to remove cart item.', error);
 	}
 };
 
@@ -94,6 +103,6 @@ export const clearCart = async (req, res) => {
 		await clearCartItems(req.user.id);
 		res.json({ message: 'Cart cleared.', items: [], summary: { itemCount: 0, subtotal: 0 } });
 	} catch (error) {
-		res.status(500).json({ message: 'Failed to clear cart.', error: error.message });
+		sendServerError(res, 'Failed to clear cart.', error);
 	}
 };

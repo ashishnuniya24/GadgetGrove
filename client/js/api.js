@@ -7,35 +7,49 @@
 		currency: 'EUR',
 	});
 
-	const safeJsonParse = (value) => {
+	function safeJsonParse(value) {
 		try {
 			return JSON.parse(value);
 		} catch {
 			return null;
 		}
-	};
+	}
 
-	const getToken = () => localStorage.getItem(TOKEN_KEY);
-	const getStoredUser = () => safeJsonParse(localStorage.getItem(USER_KEY));
+	function emitSessionChange() {
+		document.dispatchEvent(new CustomEvent('gg-session-changed'));
+	}
 
-	const setSession = (token, user) => {
+	function getToken() {
+		return localStorage.getItem(TOKEN_KEY);
+	}
+
+	function getStoredUser() {
+		return safeJsonParse(localStorage.getItem(USER_KEY));
+	}
+
+	function setSession(token, user) {
 		localStorage.setItem(TOKEN_KEY, token);
 		localStorage.setItem(USER_KEY, JSON.stringify(user));
-		document.dispatchEvent(new CustomEvent('gg-session-changed'));
-	};
+		emitSessionChange();
+	}
 
-	const clearSession = () => {
+	function clearSession() {
 		localStorage.removeItem(TOKEN_KEY);
 		localStorage.removeItem(USER_KEY);
-		document.dispatchEvent(new CustomEvent('gg-session-changed'));
-	};
+		emitSessionChange();
+	}
 
-	const request = async (path, options = {}) => {
+	function formatCurrency(amount) {
+		return currencyFormatter.format(Number(amount) || 0);
+	}
+
+	async function request(path, options = {}) {
+		const headers = options.headers ? { ...options.headers } : {};
 		const token = getToken();
-		const headers = {
-			...(options.body ? { 'Content-Type': 'application/json' } : {}),
-			...(options.headers || {}),
-		};
+
+		if (options.body) {
+			headers['Content-Type'] = 'application/json';
+		}
 
 		if (token) {
 			headers.Authorization = `Bearer ${token}`;
@@ -47,24 +61,47 @@
 			body: options.body ? JSON.stringify(options.body) : undefined,
 		});
 
-		const raw = await response.text();
-		const data = raw ? safeJsonParse(raw) ?? { message: raw } : null;
+		const rawText = await response.text();
+		const data = rawText ? safeJsonParse(rawText) || { message: rawText } : null;
 
 		if (!response.ok) {
 			if (response.status === 401) {
 				clearSession();
 			}
 
-			const error = new Error(data?.message || 'Request failed.');
+			const error = new Error((data && data.message) || 'Request failed.');
 			error.status = response.status;
 			error.data = data;
 			throw error;
 		}
 
 		return data;
-	};
+	}
 
-	const syncNavbar = () => {
+	function createLogoutItem() {
+		const item = document.createElement('li');
+		item.className = 'nav-item';
+		item.dataset.role = 'logout';
+		item.innerHTML = '<a class="nav-link" href="#">Logout</a>';
+
+		item.querySelector('a').addEventListener('click', function (event) {
+			event.preventDefault();
+			clearSession();
+			window.location.href = 'login.html';
+		});
+
+		return item;
+	}
+
+	function createUserItem(name) {
+		const item = document.createElement('li');
+		item.className = 'nav-item';
+		item.dataset.role = 'user';
+		item.innerHTML = `<span class="nav-link disabled text-white-50">Hi, ${name.split(' ')[0]}</span>`;
+		return item;
+	}
+
+	function syncNavbar() {
 		const nav = document.querySelector('.navbar-nav');
 		if (!nav) {
 			return;
@@ -72,107 +109,138 @@
 
 		const loginItem = nav.querySelector('a[href="login.html"]')?.closest('li');
 		const signupItem = nav.querySelector('a[href="signup.html"]')?.closest('li');
-		const existingUserItem = nav.querySelector('[data-role="user"]');
-		const existingLogoutItem = nav.querySelector('[data-role="logout"]');
+		const userItem = nav.querySelector('[data-role="user"]');
+		const logoutItem = nav.querySelector('[data-role="logout"]');
 		const user = getStoredUser();
-		const authenticated = Boolean(getToken());
 
-		if (!authenticated) {
+		if (!getToken()) {
 			loginItem?.classList.remove('d-none');
 			signupItem?.classList.remove('d-none');
-			existingUserItem?.remove();
-			existingLogoutItem?.remove();
+			userItem?.remove();
+			logoutItem?.remove();
 			return;
 		}
 
 		loginItem?.classList.add('d-none');
 		signupItem?.classList.add('d-none');
 
-		if (user && !existingUserItem) {
-			const userItem = document.createElement('li');
-			userItem.className = 'nav-item';
-			userItem.dataset.role = 'user';
-			userItem.innerHTML = `<span class="nav-link disabled text-white-50">Hi, ${user.name.split(' ')[0]}</span>`;
-			nav.appendChild(userItem);
+		if (user) {
+			if (userItem) {
+				userItem.innerHTML = `<span class="nav-link disabled text-white-50">Hi, ${user.name.split(' ')[0]}</span>`;
+			} else {
+				nav.appendChild(createUserItem(user.name));
+			}
 		}
 
-		if (!existingLogoutItem) {
-			const logoutItem = document.createElement('li');
-			logoutItem.className = 'nav-item';
-			logoutItem.dataset.role = 'logout';
-			logoutItem.innerHTML = '<a class="nav-link" href="#">Logout</a>';
-			logoutItem.querySelector('a').addEventListener('click', (event) => {
-				event.preventDefault();
-				clearSession();
-				window.location.href = 'login.html';
-			});
-			nav.appendChild(logoutItem);
+		if (!logoutItem) {
+			nav.appendChild(createLogoutItem());
 		}
-	};
+	}
 
-	const bootstrapSession = async () => {
-		const token = getToken();
-		if (!token) {
+	async function bootstrapSession() {
+		if (!getToken()) {
 			clearSession();
 			return null;
 		}
 
 		try {
 			const data = await request('/auth/me');
-			if (data?.user) {
+			if (data && data.user) {
 				localStorage.setItem(USER_KEY, JSON.stringify(data.user));
-				document.dispatchEvent(new CustomEvent('gg-session-changed'));
+				emitSessionChange();
+				return data.user;
 			}
-			return data?.user || null;
 		} catch {
 			return null;
 		}
-	};
 
-	const requireAuth = (redirectTo = 'login.html') => {
+		return null;
+	}
+
+	function requireAuth(redirectTo = 'login.html') {
 		if (getToken()) {
 			return true;
 		}
 
 		window.location.href = redirectTo;
 		return false;
-	};
+	}
+
+	function isAuthenticated() {
+		return Boolean(getToken());
+	}
 
 	document.addEventListener('DOMContentLoaded', syncNavbar);
 	document.addEventListener('gg-session-changed', syncNavbar);
 
 	window.GadgetGroveAPI = {
 		request,
-		formatCurrency: (amount) => currencyFormatter.format(Number(amount) || 0),
+		formatCurrency,
 		getToken,
 		getStoredUser,
 		setSession,
 		clearSession,
 		bootstrapSession,
 		requireAuth,
-		isAuthenticated: () => Boolean(getToken()),
-		register: (payload) => request('/auth/register', { method: 'POST', body: payload }),
-		login: async (payload) => {
+		isAuthenticated,
+		register(payload) {
+			return request('/auth/register', { method: 'POST', body: payload });
+		},
+		async login(payload) {
 			const data = await request('/auth/login', { method: 'POST', body: payload });
 			setSession(data.token, data.user);
 			return data;
 		},
-		me: () => request('/auth/me'),
-		getCart: () => request('/cart'),
-		addToCart: (productId, quantity = 1) => request('/cart', { method: 'POST', body: { productId, quantity } }),
-		updateCartItem: (id, quantity) => request(`/cart/${id}`, { method: 'PATCH', body: { quantity } }),
-		removeCartItem: (id) => request(`/cart/${id}`, { method: 'DELETE' }),
-		clearCart: () => request('/cart', { method: 'DELETE' }),
-		getWishlist: () => request('/wishlist'),
-		addToWishlist: (productId) => request('/wishlist', { method: 'POST', body: { productId } }),
-		removeFromWishlist: (productId) => request(`/wishlist/${productId}`, { method: 'DELETE' }),
-		getComments: (productId) => request(`/products/${productId}/comments`),
-		addComment: (productId, content) => request(`/products/${productId}/comments`, { method: 'POST', body: { content } }),
-		updateComment: (productId, commentId, content) => request(`/products/${productId}/comments/${commentId}`, { method: 'PATCH', body: { content } }),
-		deleteComment: (productId, commentId) => request(`/products/${productId}/comments/${commentId}`, { method: 'DELETE' }),
-		toggleCommentLike: (productId, commentId) => request(`/products/${productId}/comments/${commentId}/like`, { method: 'POST' }),
-		submitFeedback: (payload) => request('/feedback', { method: 'POST', body: payload }),
-		placeOrder: (payload) => request('/orders', { method: 'POST', body: payload }),
-		getOrders: () => request('/orders'),
+		me() {
+			return request('/auth/me');
+		},
+		getCart() {
+			return request('/cart');
+		},
+		addToCart(productId, quantity = 1) {
+			return request('/cart', { method: 'POST', body: { productId, quantity } });
+		},
+		updateCartItem(id, quantity) {
+			return request(`/cart/${id}`, { method: 'PATCH', body: { quantity } });
+		},
+		removeCartItem(id) {
+			return request(`/cart/${id}`, { method: 'DELETE' });
+		},
+		clearCart() {
+			return request('/cart', { method: 'DELETE' });
+		},
+		getWishlist() {
+			return request('/wishlist');
+		},
+		addToWishlist(productId) {
+			return request('/wishlist', { method: 'POST', body: { productId } });
+		},
+		removeFromWishlist(productId) {
+			return request(`/wishlist/${productId}`, { method: 'DELETE' });
+		},
+		getComments(productId) {
+			return request(`/products/${productId}/comments`);
+		},
+		addComment(productId, content) {
+			return request(`/products/${productId}/comments`, { method: 'POST', body: { content } });
+		},
+		updateComment(productId, commentId, content) {
+			return request(`/products/${productId}/comments/${commentId}`, { method: 'PATCH', body: { content } });
+		},
+		deleteComment(productId, commentId) {
+			return request(`/products/${productId}/comments/${commentId}`, { method: 'DELETE' });
+		},
+		toggleCommentLike(productId, commentId) {
+			return request(`/products/${productId}/comments/${commentId}/like`, { method: 'POST' });
+		},
+		submitFeedback(payload) {
+			return request('/feedback', { method: 'POST', body: payload });
+		},
+		placeOrder(payload) {
+			return request('/orders', { method: 'POST', body: payload });
+		},
+		getOrders() {
+			return request('/orders');
+		},
 	};
 })();

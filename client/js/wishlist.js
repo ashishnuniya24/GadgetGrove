@@ -1,8 +1,11 @@
 (function () {
 	const api = window.GadgetGroveAPI;
-	const formatCurrency = (amount) => api.formatCurrency(amount);
 
-	document.addEventListener('DOMContentLoaded', async () => {
+	function formatCurrency(amount) {
+		return api.formatCurrency(amount);
+	}
+
+	document.addEventListener('DOMContentLoaded', async function () {
 		const grid = document.getElementById('wishlistItemsGrid');
 		if (!grid) {
 			return;
@@ -11,11 +14,13 @@
 		const badge = document.getElementById('wishlistCountBadge');
 		const alertHost = document.getElementById('wishlistAlert');
 
-		const showAlert = (message, type = 'danger') => {
+		function showAlert(message, type = 'danger') {
 			alertHost.innerHTML = `<div class="alert alert-${type} mb-0">${message}</div>`;
-		};
+		}
 
-		const renderWishlist = ({ items, count }) => {
+		function renderWishlist(data) {
+			const items = data.items || [];
+			const count = data.count || 0;
 			badge.textContent = `${count} Saved`;
 
 			if (!items.length) {
@@ -42,16 +47,29 @@
 					</div>
 				</div>
 			`).join('');
-		};
+		}
 
-		const loadWishlist = async () => {
+		async function loadWishlist() {
 			try {
 				const data = await api.getWishlist();
 				renderWishlist(data);
 			} catch (error) {
 				showAlert(error.message || 'Failed to load wishlist.');
 			}
-		};
+		}
+
+		async function handleWishlistAction(action, productId) {
+			if (action === 'cart') {
+				await api.addToCart(productId, 1);
+				showAlert('Product added to cart.', 'success');
+				return;
+			}
+
+			if (action === 'remove') {
+				await api.removeFromWishlist(productId);
+				showAlert('Product removed from wishlist.', 'success');
+			}
+		}
 
 		if (!api.isAuthenticated()) {
 			showAlert('Please login to access your wishlist.', 'warning');
@@ -62,25 +80,17 @@
 		await api.bootstrapSession();
 		await loadWishlist();
 
-		grid.addEventListener('click', async (event) => {
+		grid.addEventListener('click', async function (event) {
 			const control = event.target.closest('[data-action]');
 			if (!control) {
 				return;
 			}
 
+			const action = control.dataset.action;
 			const productId = control.dataset.productId;
 
 			try {
-				if (control.dataset.action === 'cart') {
-					await api.addToCart(productId, 1);
-					showAlert('Product added to cart.', 'success');
-				}
-
-				if (control.dataset.action === 'remove') {
-					await api.removeFromWishlist(productId);
-					showAlert('Product removed from wishlist.', 'success');
-				}
-
+				await handleWishlistAction(action, productId);
 				await loadWishlist();
 			} catch (error) {
 				showAlert(error.message || 'Wishlist action failed.');

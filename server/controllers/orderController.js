@@ -1,5 +1,9 @@
 import { createOrderFromCart, getOrdersByUserId } from '../models/orderModel.js';
 
+const sendServerError = (res, message, error) => {
+	res.status(500).json({ message, error: error.message });
+};
+
 export const placeOrder = async (req, res) => {
 	try {
 		const { fullName, phone, address, city, postalCode, paymentMethod } = req.body;
@@ -19,8 +23,11 @@ export const placeOrder = async (req, res) => {
 
 		res.status(201).json({ message: 'Order placed successfully.', order });
 	} catch (error) {
-		const status = error.message === 'Cart is empty' ? 400 : 500;
-		res.status(status).json({ message: error.message || 'Failed to place order.' });
+		if (error.message === 'Cart is empty') {
+			return res.status(400).json({ message: 'Cart is empty' });
+		}
+
+		sendServerError(res, 'Failed to place order.', error);
 	}
 };
 
@@ -29,6 +36,6 @@ export const getOrders = async (req, res) => {
 		const orders = await getOrdersByUserId(req.user.id);
 		res.json({ orders, count: orders.length });
 	} catch (error) {
-		res.status(500).json({ message: 'Failed to fetch orders.', error: error.message });
+		sendServerError(res, 'Failed to fetch orders.', error);
 	}
 };

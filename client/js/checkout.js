@@ -1,9 +1,12 @@
 (function () {
 	const api = window.GadgetGroveAPI;
 	const DELIVERY_FEE = 199;
-	const formatCurrency = (amount) => api.formatCurrency(amount);
 
-	document.addEventListener('DOMContentLoaded', async () => {
+	function formatCurrency(amount) {
+		return api.formatCurrency(amount);
+	}
+
+	document.addEventListener('DOMContentLoaded', async function () {
 		const form = document.getElementById('checkout-form');
 		if (!form) {
 			return;
@@ -16,11 +19,11 @@
 		const totalNode = document.getElementById('checkoutTotal');
 		const submitButton = document.getElementById('placeOrderBtn');
 
-		const showAlert = (message, type = 'danger') => {
+		function showAlert(message, type = 'danger') {
 			alertHost.innerHTML = `<div class="alert alert-${type} mb-0">${message}</div>`;
-		};
+		}
 
-		const renderSummary = (cart) => {
+		function renderSummary(cart) {
 			const { items, summary } = cart;
 			const delivery = items.length ? DELIVERY_FEE : 0;
 			subtotalNode.textContent = formatCurrency(summary.subtotal);
@@ -39,7 +42,40 @@
 					<span>${formatCurrency(item.line_total)}</span>
 				</li>
 			`).join('');
-		};
+		}
+
+		function fillUserDetails() {
+			const user = api.getStoredUser();
+			if (!user) {
+				return;
+			}
+
+			document.getElementById('checkoutName').value = user.name || '';
+			document.getElementById('checkoutPhone').value = user.phone || '';
+			document.getElementById('checkoutAddress').value = user.address || '';
+		}
+
+		function getFormPayload() {
+			return {
+				fullName: document.getElementById('checkoutName').value.trim(),
+				phone: document.getElementById('checkoutPhone').value.trim(),
+				address: document.getElementById('checkoutAddress').value.trim(),
+				city: document.getElementById('checkoutCity').value.trim(),
+				postalCode: document.getElementById('checkoutZip').value.trim(),
+				paymentMethod: document.getElementById('checkoutPayment').value,
+			};
+		}
+
+		function isValidPayload(payload) {
+			return Boolean(
+				payload.fullName &&
+				payload.phone &&
+				payload.address &&
+				payload.city &&
+				payload.postalCode &&
+				payload.paymentMethod
+			);
+		}
 
 		if (!api.isAuthenticated()) {
 			showAlert('Please login to continue to checkout.', 'warning');
@@ -49,12 +85,7 @@
 		}
 
 		await api.bootstrapSession();
-		const user = api.getStoredUser();
-		if (user) {
-			document.getElementById('checkoutName').value = user.name || '';
-			document.getElementById('checkoutPhone').value = user.phone || '';
-			document.getElementById('checkoutAddress').value = user.address || '';
-		}
+		fillUserDetails();
 
 		try {
 			const cart = await api.getCart();
@@ -63,19 +94,12 @@
 			showAlert(error.message || 'Failed to load checkout summary.');
 		}
 
-		form.addEventListener('submit', async (event) => {
+		form.addEventListener('submit', async function (event) {
 			event.preventDefault();
 
-			const payload = {
-				fullName: document.getElementById('checkoutName').value.trim(),
-				phone: document.getElementById('checkoutPhone').value.trim(),
-				address: document.getElementById('checkoutAddress').value.trim(),
-				city: document.getElementById('checkoutCity').value.trim(),
-				postalCode: document.getElementById('checkoutZip').value.trim(),
-				paymentMethod: document.getElementById('checkoutPayment').value,
-			};
+			const payload = getFormPayload();
 
-			if (!payload.fullName || !payload.phone || !payload.address || !payload.city || !payload.postalCode || !payload.paymentMethod) {
+			if (!isValidPayload(payload)) {
 				showAlert('Please complete all required checkout fields.', 'warning');
 				return;
 			}
@@ -88,7 +112,7 @@
 				subtotalNode.textContent = formatCurrency(0);
 				deliveryNode.textContent = formatCurrency(0);
 				totalNode.textContent = formatCurrency(0);
-				window.setTimeout(() => {
+				window.setTimeout(function () {
 					window.location.href = 'cart.html';
 				}, 1200);
 			} catch (error) {

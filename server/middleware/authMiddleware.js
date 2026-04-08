@@ -1,38 +1,42 @@
 import jwt from 'jsonwebtoken';
 
-export const protect = (req, res, next) => {
-	let token;
-
-	const authHeader = req.headers.authorization;
-	if (authHeader && authHeader.startsWith('Bearer ')) {
-		token = authHeader.split(' ')[1];
+const getTokenFromHeader = (authHeader) => {
+	if (!authHeader || !authHeader.startsWith('Bearer ')) {
+		return null;
 	}
+
+	return authHeader.split(' ')[1];
+};
+
+const decodeToken = (token) => jwt.verify(token, process.env.JWT_SECRET);
+
+export const protect = (req, res, next) => {
+	const token = getTokenFromHeader(req.headers.authorization);
 
 	if (!token) {
 		return res.status(401).json({ message: 'Not authorized, token missing' });
 	}
 
 	try {
-		const decoded = jwt.verify(token, process.env.JWT_SECRET);
-		req.user = { id: decoded.id, email: decoded.email }; // basic info
+		const decoded = decodeToken(token);
+		req.user = { id: decoded.id, email: decoded.email };
 		next();
-	} catch (error) {
+	} catch {
 		return res.status(401).json({ message: 'Not authorized, token invalid' });
 	}
 };
 
 export const attachUserIfPresent = (req, res, next) => {
-	const authHeader = req.headers.authorization;
-	if (!authHeader || !authHeader.startsWith('Bearer ')) {
+	const token = getTokenFromHeader(req.headers.authorization);
+	if (!token) {
 		return next();
 	}
 
 	try {
-		const token = authHeader.split(' ')[1];
-		const decoded = jwt.verify(token, process.env.JWT_SECRET);
+		const decoded = decodeToken(token);
 		req.user = { id: decoded.id, email: decoded.email };
 	} catch {
-		// Ignore invalid optional tokens and continue as guest.
+		// Ignore invalid token here because this middleware is optional.
 	}
 
 	next();
